@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ポーカー清算">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1917" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>ポーカー清算</title>
+<script>if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#ffffff;--bg2:#f5f4f0;--bg3:#eeecea;
+  --text:#1a1917;--text2:#6b6a67;--text3:#9b9a97;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);
+  --green:#1a6b3c;--green-bg:#e8f5ee;
+  --red:#b91c1c;--red-bg:#fef2f2;
+  --radius:10px;--radius-lg:14px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1b19;--bg2:#252420;--bg3:#2e2d29;
+  --text:#f0ede8;--text2:#9b9a97;--text3:#6b6a67;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  --green:#4ade80;--green-bg:#052e16;
+  --red:#f87171;--red-bg:#450a0a;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:var(--bg3);color:var(--text);min-height:100dvh;}
+.app{max-width:520px;margin:0 auto;padding:16px 12px 80px;}
+h1{font-size:18px;font-weight:600;margin-bottom:16px;padding:4px 0;}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;}
+.card-title{font-size:11px;color:var(--text2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+input[type=number],input[type=text]{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:8px 10px;font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;width:100%;}
+input[type=number]:focus,input[type=text]:focus{border-color:var(--border2);}
+input[type=number]{-moz-appearance:textfield;}
+input::-webkit-inner-spin-button,input::-webkit-outer-spin-button{-webkit-appearance:none;}
+
+/* Rate */
+.rate-grid{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.rate-grid input{width:100px;}
+.rate-grid span{font-size:13px;color:var(--text2);white-space:nowrap;}
+.rate-preview{font-size:12px;color:var(--text2);background:var(--bg2);border-radius:var(--radius);padding:5px 10px;margin-top:8px;}
+.rate-preview b{color:var(--text);font-weight:500;}
+
+/* Chip types */
+.chip-types-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.chip-types-header .card-title{margin-bottom:0;}
+.add-chip-btn{font-size:12px;color:var(--text2);background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:4px 12px;cursor:pointer;}
+.chip-type-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.chip-type-row input{width:90px;}
+.chip-type-label{font-size:13px;color:var(--text2);}
+.rm-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:6px;}
+.rm-btn:active{background:var(--bg2);}
+
+/* Start chip */
+.start-row{display:flex;align-items:center;gap:8px;}
+.start-row input{width:130px;}
+.start-row span{font-size:13px;color:var(--text2);}
+
+/* Players */
+.player-block{border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;background:var(--bg2);}
+.player-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.player-top input{flex:1;}
+.player-total{font-size:13px;font-weight:600;color:var(--text);min-width:72px;text-align:right;white-space:nowrap;}
+.chip-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.chip-badge{font-size:11px;background:var(--bg);border:0.5px solid var(--border);border-radius:6px;padding:3px 8px;min-width:56px;text-align:center;color:var(--text2);white-space:nowrap;}
+.chip-row input{width:72px;}
+.x-label{font-size:12px;color:var(--text3);}
+.subtotal{font-size:12px;color:var(--text2);min-width:68px;text-align:right;white-space:nowrap;}
+.player-footer{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border);}
+.footer-label{font-size:12px;color:var(--text2);}
+.okawari-input{width:60px;}
+
+.add-player-btn{width:100%;background:none;border:0.5px dashed var(--border2);border-radius:var(--radius);padding:10px;font-size:13px;color:var(--text2);cursor:pointer;margin-bottom:8px;}
+.add-player-btn:active{background:var(--bg);}
+
+.chip-status{font-size:12px;padding:7px 12px;border-radius:var(--radius);margin-top:4px;display:none;}
+.chip-status.show{display:block;}
+.chip-status.ok{background:var(--green-bg);color:var(--green);}
+.chip-status.warn{background:var(--red-bg);color:var(--red);}
+
+.calc-btn{width:100%;padding:14px;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius-lg);font-size:16px;font-weight:600;cursor:pointer;margin-bottom:12px;letter-spacing:0.1em;}
+.calc-btn:active{opacity:0.8;}
+
+.result-card{display:none;}
+.result-card.show{display:block;}
+.result-title{font-size:13px;font-weight:600;margin-bottom:10px;}
+.balance-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:14px;gap:8px;}
+.balance-row:last-child{border-bottom:none;}
+.bal-name{flex:1;}
+.bal-chips{color:var(--text2);font-size:13px;}
+.pos{color:var(--green);font-weight:600;}
+.neg{color:var(--red);font-weight:600;}
+.txn-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--border);font-size:14px;}
+.txn-row:last-child{border-bottom:none;}
+.arrow{color:var(--text3);}
+.amount{margin-left:auto;font-weight:600;}
+.no-txn{font-size:14px;color:var(--text2);}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>🃏 ポーカー清算</h1>
+
+<div class="card">
+  <p class="card-title">レート設定</p>
+  <div class="rate-grid">
+    <span>チップ</span>
+    <input type="number" id="chip-unit" value="20000" min="1" step="100" inputmode="numeric" oninput="updateAll()">
+    <span>点 ＝</span>
+    <input type="number" id="yen-unit" value="10000" min="1" step="100" inputmode="numeric" oninput="updateAll()">
+    <span>円</span>
+  </div>
+  <div class="rate-preview" id="rate-preview"></div>
+</div>
+
+<div class="card">
+  <div class="chip-types-header">
+    <p class="card-title">チップの種類</p>
+    <button class="add-chip-btn" onclick="addChipType()">＋ 追加</button>
+  </div>
+  <div id="chip-types"></div>
+</div>
+
+<div class="card">
+  <p class="card-title">スタートチップ（全員共通）</p>
+  <div class="start-row">
+    <input type="number" id="start-chip" placeholder="例: 25000" min="0" step="100" inputmode="numeric" oninput="updateAll()">
+    <span>点</span>
+  </div>
+</div>
+
+<div class="card">
+  <p class="card-title">プレイヤー</p>
+  <div id="players"></div>
+  <button class="add-player-btn" onclick="addPlayer()">＋ プレイヤーを追加</button>
+  <div class="chip-status" id="chip-status"></div>
+</div>
+
+<button class="calc-btn" onclick="calculate()">清　算　す　る</button>
+
+<div class="card result-card" id="result-summary">
+  <p class="result-title">損益サマリー</p>
+  <div id="balance-list"></div>
+</div>
+<div class="card result-card" id="result-txn">
+  <p class="result-title">送金リスト（最小回数）</p>
+  <div id="txn-list"></div>
+</div>
+</div>
+
+<script>
+let chipTypes=[{id:1,value:500},{id:2,value:100},{id:3,value:50}];
+let ctId=10,players=[],pid=0;
+
+function addChipType(val){chipTypes.push({id:++ctId,value:val||''});renderChipTypes();updateAll();}
+function removeChipType(id){chipTypes=chipTypes.filter(c=>c.id!==id);players.forEach(p=>{delete p.counts[id];});renderChipTypes();renderPlayers();updateAll();}
+function onChipTypeChange(id,val){const ct=chipTypes.find(c=>c.id===id);if(ct)ct.value=Number(val)||'';renderChipBadges();updateAll();}
+
+function renderChipBadges(){
+  players.forEach(p=>{
+    chipTypes.forEach(ct=>{
+      const badge=document.getElementById('badge-'+p.id+'-'+ct.id);
+      if(badge)badge.textContent=(ct.value?ct.value.toLocaleString():'?')+'点';
+    });
+  });
+}
+
+function renderChipTypes(){
+  document.getElementById('chip-types').innerHTML=chipTypes.map(ct=>`
+    <div class="chip-type-row">
+      <input type="number" value="${ct.value}" placeholder="例: 100" min="1" step="1" inputmode="numeric"
+        style="width:90px" oninput="onChipTypeChange(${ct.id},this.value)">
+      <span class="chip-type-label">点チップ</span>
+      <button class="rm-btn" onclick="removeChipType(${ct.id})">×</button>
+    </div>
+  `).join('');
+}
+
+function addPlayer(){
+  const counts={};chipTypes.forEach(ct=>counts[ct.id]='');
+  players.push({id:++pid,name:'',counts,okawari:0});
+  renderPlayers();
+}
+function removePlayer(id){players=players.filter(p=>p.id!==id);renderPlayers();updateAll();}
+function onNameChange(id,val){const p=players.find(p=>p.id===id);if(p)p.name=val;}
+function onCountChange(pid,ctId,val){
+  const p=players.find(p=>p.id===pid);
+  if(p){p.counts[ctId]=val===''?'':Number(val);updatePlayerDisplay(pid);updateAll();}
+}
+function onOkawariChange(id,val){const p=players.find(p=>p.id===id);if(p){p.okawari=Number(val)||0;updateAll();}}
+
+function getPlayerTotal(p){
+  let t=0;chipTypes.forEach(ct=>{t+=(Number(p.counts[ct.id])||0)*(Number(ct.value)||0);});return t;
+}
+
+function updatePlayerDisplay(pid){
+  const p=players.find(p=>p.id===pid);if(!p)return;
+  const total=getPlayerTotal(p);
+  const el=document.getElementById('total-'+pid);
+  if(el)el.textContent=total>0?total.toLocaleString()+'点':'—';
+  chipTypes.forEach(ct=>{
+    const sub=document.getElementById('sub-'+pid+'-'+ct.id);
+    if(sub){const cnt=Number(p.counts[ct.id])||0,v=Number(ct.value)||0;sub.textContent=cnt&&v?(cnt*v).toLocaleString()+'点':'';}
+  });
+}
+
+function renderPlayers(){
+  document.getElementById('players').innerHTML=players.map(p=>`
+    <div class="player-block">
+      <div class="player-top">
+        <input type="text" placeholder="名前" value="${p.name}" oninput="onNameChange(${p.id},this.value)">
+        <span class="player-total" id="total-${p.id}">—</span>
+        <button class="rm-btn" onclick="removePlayer(${p.id})">×</button>
+      </div>
+      ${chipTypes.map(ct=>`
+        <div class="chip-row">
+          <span class="chip-badge" id="badge-${p.id}-${ct.id}">${ct.value?ct.value.toLocaleString():'?'}点</span>
+          <input type="number" min="0" step="1" inputmode="numeric" placeholder="0"
+            value="${p.counts[ct.id]!==''?p.counts[ct.id]:''}"
+            style="width:72px" oninput="onCountChange(${p.id},${ct.id},this.value)">
+          <span class="x-label">枚</span>
+          <span class="subtotal" id="sub-${p.id}-${ct.id}"></span>
+        </div>
+      `).join('')}
+      <div class="player-footer">
+        <span class="footer-label">おかわり</span>
+        <input class="okawari-input" type="number" min="0" step="1" inputmode="numeric" placeholder="0"
+          value="${p.okawari||''}" oninput="onOkawariChange(${p.id},this.value)">
+        <span class="footer-label">回</span>
+      </div>
+    </div>
+  `).join('');
+  players.forEach(p=>updatePlayerDisplay(p.id));
+}
+
+function updateAll(){updatePreview();checkChips();}
+
+function updatePreview(){
+  const cu=Number(document.getElementById('chip-unit').value)||0;
+  const yu=Number(document.getElementById('yen-unit').value)||0;
+  const el=document.getElementById('rate-preview');
+  if(!cu||!yu){el.textContent='';return;}
+  const p1k=yu/cu*1000,p10k=yu/cu*10000;
+  el.innerHTML=`1,000点 ＝ <b>${fmt(p1k)}円</b>　／　1万点 ＝ <b>${fmt(p10k)}円</b>`;
+}
+
+function fmt(n){return n%1===0?n.toLocaleString():n.toFixed(1);}
+
+function checkChips(){
+  const start=Number(document.getElementById('start-chip').value)||0;
+  const el=document.getElementById('chip-status');
+  if(!start||players.length===0){el.className='chip-status';return;}
+  const hasInput=players.some(p=>chipTypes.some(ct=>p.counts[ct.id]!==''));
+  if(!hasInput){el.className='chip-status';return;}
+  const totalIn=players.reduce((s,p)=>s+start*(1+(p.okawari||0)),0);
+  const totalOut=players.reduce((s,p)=>s+getPlayerTotal(p),0);
+  const diff=totalOut-totalIn;
+  if(diff===0){el.className='chip-status show ok';el.textContent=`チップ合計が一致しています（${totalOut.toLocaleString()}点）`;}
+  else{el.className='chip-status show warn';el.textContent=`合計が合いません。差分: ${diff>0?'+':''}${diff.toLocaleString()}点`;}
+}
+
+function calculate(){
+  const cu=Number(document.getElementById('chip-unit').value);
+  const yu=Number(document.getElementById('yen-unit').value);
+  const start=Number(document.getElementById('start-chip').value)||0;
+  if(!cu||!yu){alert('レートを設定してください');return;}
+  const balances=players.map(p=>{
+    const chips=getPlayerTotal(p);
+    const buyIn=start*(1+(p.okawari||0));
+    const net=chips-buyIn;
+    const yen=Math.round(net*yu/cu);
+    return{name:p.name||'名無し',chips,yen};
+  });
+  document.getElementById('balance-list').innerHTML=balances.map(b=>`
+    <div class="balance-row">
+      <span class="bal-name">${b.name}</span>
+      <span class="bal-chips">${b.chips.toLocaleString()}点</span>
+      <span class="${b.yen>=0?'pos':'neg'}">${b.yen>=0?'+':''}${b.yen.toLocaleString()}円</span>
+    </div>
+  `).join('');
+  let debtors=balances.filter(b=>b.yen<0).map(b=>({name:b.name,amt:-b.yen})).sort((a,b)=>b.amt-a.amt);
+  let creditors=balances.filter(b=>b.yen>0).map(b=>({name:b.name,amt:b.yen})).sort((a,b)=>b.amt-a.amt);
+  const txns=[];let di=0,ci=0;
+  while(di<debtors.length&&ci<creditors.length){
+    const d=debtors[di],c=creditors[ci];
+    const amt=Math.min(d.amt,c.amt);
+    txns.push({from:d.name,to:c.name,amt});
+    d.amt-=amt;c.amt-=amt;
+    if(d.amt<1)di++;if(c.amt<1)ci++;
+  }
+  document.getElementById('txn-list').innerHTML=txns.length===0
+    ?'<p class="no-txn">全員トントンです！</p>'
+    :txns.map(t=>`
+      <div class="txn-row">
+        <span style="font-weight:600">${t.from}</span>
+        <span class="arrow">→</span>
+        <span style="font-weight:600">${t.to}</span>
+        <span class="amount">${t.amt.toLocaleString()}円</span>
+      </div>`).join('');
+  document.getElementById('result-summary').className='card result-card show';
+  document.getElementById('result-txn').className='card result-card show';
+  document.getElementById('result-summary').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+renderChipTypes();
+addPlayer();addPlayer();addPlayer();
+updatePreview();
+</script>
+</body>
+</html>
