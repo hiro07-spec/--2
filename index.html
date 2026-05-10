@@ -56,11 +56,6 @@ input::-webkit-inner-spin-button,input::-webkit-outer-spin-button{-webkit-appear
 .rm-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:6px;}
 .rm-btn:active{background:var(--bg2);}
 
-/* Start chip */
-.start-row{display:flex;align-items:center;gap:8px;}
-.start-row input{width:130px;}
-.start-row span{font-size:13px;color:var(--text2);}
-
 /* Players */
 .player-block{border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;background:var(--bg2);}
 .player-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
@@ -126,13 +121,6 @@ input::-webkit-inner-spin-button,input::-webkit-outer-spin-button{-webkit-appear
   <div id="chip-types"></div>
 </div>
 
-<div class="card">
-  <p class="card-title">スタートチップ（全員共通）</p>
-  <div class="start-row">
-    <input type="number" id="start-chip" placeholder="例: 25000" min="0" step="100" inputmode="numeric" oninput="updateAll()">
-    <span>点</span>
-  </div>
-</div>
 
 <div class="card">
   <p class="card-title">プレイヤー</p>
@@ -252,7 +240,7 @@ function updatePreview(){
 function fmt(n){return n%1===0?n.toLocaleString():n.toFixed(1);}
 
 function checkChips(){
-  const start=Number(document.getElementById('start-chip').value)||0;
+  const start=Number(document.getElementById('chip-unit').value)||0;
   const el=document.getElementById('chip-status');
   if(!start||players.length===0){el.className='chip-status';return;}
   const hasInput=players.some(p=>chipTypes.some(ct=>p.counts[ct.id]!==''));
@@ -267,7 +255,7 @@ function checkChips(){
 function calculate(){
   const cu=Number(document.getElementById('chip-unit').value);
   const yu=Number(document.getElementById('yen-unit').value);
-  const start=Number(document.getElementById('start-chip').value)||0;
+  const start=Number(document.getElementById('chip-unit').value)||0;
   if(!cu||!yu){alert('レートを設定してください');return;}
   const balances=players.map(p=>{
     const chips=getPlayerTotal(p);
